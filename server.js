@@ -1,6 +1,13 @@
 var express = require('express');
+var bodyParser = require('body-parser'); //this is middleware for express so must be added to express like normal middleware
 var app = express();
 var PORT = process.env.PORT || 3000
+var todos = [];
+var todoNextId = 1;
+
+app.use(bodyParser.json()); //bodyParser added as middleware to express
+
+/*
 var todos = [{
     id: 1,
     description: 'Meet mom for lunch',
@@ -14,6 +21,8 @@ var todos = [{
     description: 'Pick up kids',
     completed: true
 }];
+*/
+
 app.get('/', function(req, res) {
     res.send('Todo API Root');
 });
@@ -43,6 +52,17 @@ app.get('/todo/:id', function(req, res) {
     }
 
 });
+
+//POST /todos/ to create new todo// requires body-parse module
+app.post('/todos', function(req, res) {
+    var body = req.body;
+    body.id = todoNextId;
+    todoNextId++;
+    todos.push(body);
+    res.json(body);
+    //console.log('description: ' + body.description);
+});
+
 
 app.listen(PORT, function() {
     console.log('Express listening on port:' + PORT + '!');
