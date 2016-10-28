@@ -1,5 +1,6 @@
 var express = require('express');
 var bodyParser = require('body-parser'); //this is middleware for express so must be added to express like normal middleware
+var _ = require('underscore');
 var app = express();
 var PORT = process.env.PORT || 3000
 var todos = [];
@@ -39,10 +40,15 @@ app.get('/todo/:id', function(req, res) {
     var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
     var selectedTodo;
 
+    /* replced with underscore version below
     todos.forEach(function(todo) {
         if (todo.id === todoId) {
             selectedTodo = todo;
         }
+    });
+    */
+    selectedTodo = _.findWhere(todos, {
+        id: todoId
     });
 
     if (selectedTodo) {
@@ -55,11 +61,17 @@ app.get('/todo/:id', function(req, res) {
 
 //POST /todos/ to create new todo// requires body-parse module
 app.post('/todos', function(req, res) {
-    var body = req.body;
+    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
+    if ((!_.isBoolean(body.completed)) || (!_.isString(body.description)) ||
+        (body.description.trim().length === 0)) {
+        return res.status(400).send(); //return error
+    }
+    body.description = body.description.trim();
     body.id = todoNextId;
     todoNextId++;
     todos.push(body);
-    res.json(body);
+    res.json(
+        body);
     //console.log('description: ' + body.description);
 });
 
