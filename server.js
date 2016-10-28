@@ -1,9 +1,47 @@
 var express = require('express');
 var app = express();
 var PORT = process.env.PORT || 3000
-
+var todos = [{
+    id: 1,
+    description: 'Meet mom for lunch',
+    completed: false
+}, {
+    id: 2,
+    description: 'Go to market',
+    completed: false
+}, {
+    id: 3,
+    description: 'Pick up kids',
+    completed: true
+}];
 app.get('/', function(req, res) {
     res.send('Todo API Root');
+});
+
+//GET request /todos FOR ALL TODOS
+app.get('/todos', function(req, res) {
+    res.json(todos); // a bulit in function that mirrors JSON.stringify();
+});
+
+//GET request /todo for a specific todo
+app.get('/todo/:id', function(req, res) {
+    //res.send('requesting:' + req.params.id);
+
+    var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
+    var selectedTodo;
+
+    todos.forEach(function(todo) {
+        if (todo.id === todoId) {
+            selectedTodo = todo;
+        }
+    });
+
+    if (selectedTodo) {
+        res.json(selectedTodo);
+    } else {
+        res.status(404).send(); //send a 404 if there is no match
+    }
+
 });
 
 app.listen(PORT, function() {
