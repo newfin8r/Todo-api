@@ -47,7 +47,8 @@ app.get('/todos', function(req, res) {
 
     if (queryParams.hasOwnProperty('q') && queryParams.q.length > 0) {
         filteredTodos = _.filter(filteredTodos, function(todo) { //the filter methos allows you to create a new array from am existign one and check each item for inclusion with the callback method
-            return todo.description.indexOf(queryParams.q) != -
+            return todo.description.toLowerCase().indexOf(
+                    queryParams.q.toLowerCase()) != -
                 1; //if the return is true it is added to te search results
         });
     }
