@@ -97,6 +97,49 @@ app.post('/todos', function(req, res) {
 });
 
 
+//PUT /todos/ to update a todo// requires body-parse module
+app.put('/todos/:id', function(req, res) {
+    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
+    var todoId = parseInt(req.params.id, 10);
+    var selectedTodo;
+    var validAttributes = {};
+
+    selectedTodo = _.findWhere(todos, {
+        id: todoId
+    });
+    if (!selectedTodo) {
+        return res.status(404).json({ // the use of return makes sure that nothign after it in the function executes
+            "error": "no todo found with that id."
+        }); //send a 404 if there is no match
+    }
+
+    //body.hasOwnProperty('completed');//lets you know if an object has a specified property
+    if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+        validAttributes.completed = body.completed; //has the property and is a boolean
+    } else if (body.hasOwnProperty('completed')) { //has the property but is not a boolean
+        return res.status(400).json({
+            "error": "completed property must be a boolean"
+        });
+    } else {
+        //attribute not provided. request remains valid
+    }
+
+    if (body.hasOwnProperty('description') && _.isString(body.description) &&
+        body.description.trim().length > 0) {
+        validAttributes.description = body.description; //has the property and is a string
+    } else if (body.hasOwnProperty('isString')) { //has the property but is not a string
+        return res.status(400).json({
+            "error": "description property must be a non-zero length string"
+        });
+    } else {
+        //attribute not provided. request remains valid
+    }
+    console.log('validAttributes:' + JSON.stringify(validAttributes));
+    _.extend(selectedTodo, validAttributes); //this method add any new fields in the objects and updates any existing fields with those on the array
+    //***note: you don't have to explicitly update the todos array because javascript by default passes objects by reference.
+    res.json(selectedTodo);
+});
+
 app.listen(PORT, function() {
     console.log('Express listening on port:' + PORT + '!');
 });
