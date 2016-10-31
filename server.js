@@ -59,6 +59,27 @@ app.get('/todo/:id', function(req, res) {
 
 });
 
+
+//DELETE request /todo for a specific todo
+app.delete('/todos/:id', function(req, res) {
+    var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
+    var selectedTodo;
+
+    selectedTodo = _.findWhere(todos, {
+        id: todoId
+    }); //underscorer method to locate an object in an array
+
+    if (selectedTodo) {
+        todos = _.without(todos, selectedTodo); //underscore method to return a copy of an array with the passed in object(s) removed
+        res.json(selectedTodo);
+    } else {
+        res.status(404).json({
+            "error": "no todo found with that id."
+        }); //send a 404 if there is no match
+    }
+
+});
+
 //POST /todos/ to create new todo// requires body-parse module
 app.post('/todos', function(req, res) {
     var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
