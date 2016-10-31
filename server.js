@@ -32,6 +32,7 @@ app.get('/', function(req, res) {
 app.get('/todos', function(req, res) {
     var queryParams = req.query //gets the query string params. All values come in as strings
     var filteredTodos = todos;
+
     if (queryParams.hasOwnProperty('completed') && queryParams.completed ===
         'true') { //notice that you can't check if it's a boolean because the query string params are strings
         filteredTodos = _.where(filteredTodos, {
@@ -41,6 +42,13 @@ app.get('/todos', function(req, res) {
         'false') { //notice that you can't check if it's a boolean because the query string params are strings
         filteredTodos = _.where(filteredTodos, {
             completed: false //underscorer method to locate an object in an array. notice that there are no quotes around the property name
+        });
+    }
+
+    if (queryParams.hasOwnProperty('q') && queryParams.q.length > 0) {
+        filteredTodos = _.filter(filteredTodos, function(todo) { //the filter methos allows you to create a new array from am existign one and check each item for inclusion with the callback method
+            return todo.description.indexOf(queryParams.q) != -
+                1; //if the return is true it is added to te search results
         });
     }
     res.json(filteredTodos); // a bulit in function that mirrors JSON.stringify();
