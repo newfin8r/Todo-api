@@ -30,7 +30,20 @@ app.get('/', function(req, res) {
 
 //GET request /todos FOR ALL TODOS
 app.get('/todos', function(req, res) {
-    res.json(todos); // a bulit in function that mirrors JSON.stringify();
+    var queryParams = req.query //gets the query string params. All values come in as strings
+    var filteredTodos = todos;
+    if (queryParams.hasOwnProperty('completed') && queryParams.completed ===
+        'true') { //notice that you can't check if it's a boolean because the query string params are strings
+        filteredTodos = _.where(filteredTodos, {
+            completed: true //underscorer method to locate an object in an array. notice that there are no quotes around the property name
+        });
+    } else if (queryParams.hasOwnProperty('completed') && queryParams.completed ===
+        'false') { //notice that you can't check if it's a boolean because the query string params are strings
+        filteredTodos = _.where(filteredTodos, {
+            completed: false //underscorer method to locate an object in an array. notice that there are no quotes around the property name
+        });
+    }
+    res.json(filteredTodos); // a bulit in function that mirrors JSON.stringify();
 });
 
 //GET request /todo for a specific todo
@@ -67,7 +80,7 @@ app.delete('/todos/:id', function(req, res) {
 
     selectedTodo = _.findWhere(todos, {
         id: todoId
-    }); //underscorer method to locate an object in an array
+    }); //underscorer method to locate an object in an array. notice that there are no quotes around the property name
 
     if (selectedTodo) {
         todos = _.without(todos, selectedTodo); //underscore method to return a copy of an array with the passed in object(s) removed
