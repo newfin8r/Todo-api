@@ -1,28 +1,14 @@
 var express = require('express');
 var bodyParser = require('body-parser'); //this is middleware for express so must be added to express like normal middleware
 var _ = require('underscore');
+var db = require('./db.js');
+
 var app = express();
 var PORT = process.env.PORT || 3000
 var todos = [];
 var todoNextId = 1;
 
 app.use(bodyParser.json()); //bodyParser added as middleware to express
-
-/*
-var todos = [{
-    id: 1,
-    description: 'Meet mom for lunch',
-    completed: false
-}, {
-    id: 2,
-    description: 'Go to market',
-    completed: false
-}, {
-    id: 3,
-    description: 'Pick up kids',
-    completed: true
-}];
-*/
 
 app.get('/', function(req, res) {
     res.send('Todo API Root');
@@ -110,6 +96,33 @@ app.post('/todos', function(req, res) {
         return res.status(400).send(); //return error
     }
     body.description = body.description.trim();
+    db.todo.create({
+        description: 'Walk the dog',
+        completed: false
+    }).then(function(todo) {
+        res.status(200).json(todo);
+    }).catch(function(e) {
+        res.status(400).json(e);
+    });
+    /*OR the body of this method could more simply be:
+    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
+    db.todo.create(body).then(function(todo) {
+        res.json(todo.toJSON());
+    }, function(e) {
+        res.status(400).json(e);
+    });
+    */
+});
+
+/* local in memory version before db interactivity
+//POST /todos/ to create new todo// requires body-parse module
+app.post('/todos', function(req, res) {
+    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
+    if ((!_.isBoolean(body.completed)) || (!_.isString(body.description)) ||
+        (body.description.trim().length === 0)) {
+        return res.status(400).send(); //return error
+    }
+    body.description = body.description.trim();
     body.id = todoNextId;
     todoNextId++;
     todos.push(body);
@@ -117,7 +130,7 @@ app.post('/todos', function(req, res) {
         body);
     //console.log('description: ' + body.description);
 });
-
+*/
 
 //PUT /todos/ to update a todo// requires body-parse module
 app.put('/todos/:id', function(req, res) {
@@ -162,6 +175,9 @@ app.put('/todos/:id', function(req, res) {
     res.json(selectedTodo);
 });
 
-app.listen(PORT, function() {
-    console.log('Express listening on port:' + PORT + '!');
+db.sequelize.sync().then(function() { //same idea as was done in basic-sqlite-database.js but wih the imported db object
+    //once the database is connected start the server. Without the database it would be outside of this promise and just be in the file:
+    app.listen(PORT, function() {
+        console.log('Express listening on port:' + PORT + '!');
+    });
 });
