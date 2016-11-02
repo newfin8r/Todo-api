@@ -42,29 +42,17 @@ app.get('/todos', function(req, res) {
 });
 
 //GET request /todo for a specific todo
-app.get('/todo/:id', function(req, res) {
-    //res.send('requesting:' + req.params.id);
-
+app.get('/todos/:id', function(req, res) {
     var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
-    var selectedTodo;
-
-    /* replced with underscore version below
-    todos.forEach(function(todo) {
-        if (todo.id === todoId) {
-            selectedTodo = todo;
+    db.todo.findById(todoId).then(function(todo) {
+        if (!!todo) { //using !! turns 'truthy' objects into the boolean true representation while ! put it to false
+            res.json(todo.toJSON());
+        } else {
+            res.status(404).send();
         }
+    }, function(e) {
+        res.status(500).send();
     });
-    */
-    selectedTodo = _.findWhere(todos, {
-        id: todoId
-    });
-
-    if (selectedTodo) {
-        res.json(selectedTodo);
-    } else {
-        res.status(404).send(); //send a 404 if there is no match
-    }
-
 });
 
 
@@ -114,23 +102,6 @@ app.post('/todos', function(req, res) {
     */
 });
 
-/* local in memory version before db interactivity
-//POST /todos/ to create new todo// requires body-parse module
-app.post('/todos', function(req, res) {
-    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
-    if ((!_.isBoolean(body.completed)) || (!_.isString(body.description)) ||
-        (body.description.trim().length === 0)) {
-        return res.status(400).send(); //return error
-    }
-    body.description = body.description.trim();
-    body.id = todoNextId;
-    todoNextId++;
-    todos.push(body);
-    res.json(
-        body);
-    //console.log('description: ' + body.description);
-});
-*/
 
 //PUT /todos/ to update a todo// requires body-parse module
 app.put('/todos/:id', function(req, res) {
@@ -174,6 +145,78 @@ app.put('/todos/:id', function(req, res) {
     //***note: you don't have to explicitly update the todos array because javascript by default passes objects by reference.
     res.json(selectedTodo);
 });
+
+
+/* local in memory version before db interactivity
+//POST /todos/ to create new todo// requires body-parse module
+app.post('/todos', function(req, res) {
+    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
+    if ((!_.isBoolean(body.completed)) || (!_.isString(body.description)) ||
+        (body.description.trim().length === 0)) {
+        return res.status(400).send(); //return error
+    }
+    body.description = body.description.trim();
+    body.id = todoNextId;
+    todoNextId++;
+    todos.push(body);
+    res.json(
+        body);
+    //console.log('description: ' + body.description);
+});
+
+//GET request /todos FOR ALL TODOS
+app.get('/todos', function(req, res) {
+    var queryParams = req.query //gets the query string params. All values come in as strings
+    var filteredTodos = todos;
+
+    if (queryParams.hasOwnProperty('completed') && queryParams.completed ===
+        'true') { //notice that you can't check if it's a boolean because the query string params are strings
+        filteredTodos = _.where(filteredTodos, {
+            completed: true //underscorer method to locate an object in an array. notice that there are no quotes around the property name
+        });
+    } else if (queryParams.hasOwnProperty('completed') && queryParams.completed ===
+        'false') { //notice that you can't check if it's a boolean because the query string params are strings
+        filteredTodos = _.where(filteredTodos, {
+            completed: false //underscorer method to locate an object in an array. notice that there are no quotes around the property name
+        });
+    }
+
+    if (queryParams.hasOwnProperty('q') && queryParams.q.length > 0) {
+        filteredTodos = _.filter(filteredTodos, function(todo) { //the filter methos allows you to create a new array from am existign one and check each item for inclusion with the callback method
+            return todo.description.toLowerCase().indexOf(
+                    queryParams.q.toLowerCase()) != -
+                1; //if the return is true it is added to te search results
+        });
+    }
+    res.json(filteredTodos); // a bulit in function that mirrors JSON.stringify();
+});
+
+//GET request /todo for a specific todo
+app.get('/todos/:id', function(req, res) {
+    //res.send('requesting:' + req.params.id);
+
+    var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
+    var selectedTodo;
+
+    // replced with underscore version below
+    //todos.forEach(function(todo) {
+    //    if (todo.id === todoId) {
+    //        selectedTodo = todo;
+    //    }
+    //});
+
+    selectedTodo = _.findWhere(todos, {
+        id: todoId
+    });
+
+    if (selectedTodo) {
+        res.json(selectedTodo);
+    } else {
+        res.status(404).send(); //send a 404 if there is no match
+    }
+
+});
+*/
 
 db.sequelize.sync().then(function() { //same idea as was done in basic-sqlite-database.js but wih the imported db object
     //once the database is connected start the server. Without the database it would be outside of this promise and just be in the file:
