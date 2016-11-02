@@ -17,28 +17,29 @@ app.get('/', function(req, res) {
 //GET request /todos FOR ALL TODOS
 app.get('/todos', function(req, res) {
     var queryParams = req.query //gets the query string params. All values come in as strings
-    var filteredTodos = todos;
+    var where = {};
 
-    if (queryParams.hasOwnProperty('completed') && queryParams.completed ===
-        'true') { //notice that you can't check if it's a boolean because the query string params are strings
-        filteredTodos = _.where(filteredTodos, {
-            completed: true //underscorer method to locate an object in an array. notice that there are no quotes around the property name
-        });
-    } else if (queryParams.hasOwnProperty('completed') && queryParams.completed ===
-        'false') { //notice that you can't check if it's a boolean because the query string params are strings
-        filteredTodos = _.where(filteredTodos, {
-            completed: false //underscorer method to locate an object in an array. notice that there are no quotes around the property name
-        });
+    if (queryParams.hasOwnProperty('completed')) {
+        if (queryParams.completed === 'true') {
+            where.completed = true;
+        } else {
+            where.completed = false;
+        }
     }
 
     if (queryParams.hasOwnProperty('q') && queryParams.q.length > 0) {
-        filteredTodos = _.filter(filteredTodos, function(todo) { //the filter methos allows you to create a new array from am existign one and check each item for inclusion with the callback method
-            return todo.description.toLowerCase().indexOf(
-                    queryParams.q.toLowerCase()) != -
-                1; //if the return is true it is added to te search results
-        });
+        where.description = {
+            $like: '%' + queryParams.q + '%'
+        };
     }
-    res.json(filteredTodos); // a bulit in function that mirrors JSON.stringify();
+
+    db.todo.findAll({
+        where: where
+    }).then(function(todos) {
+        res.json(todos);
+    }, function(e) {
+        res.status(500).send();
+    });
 });
 
 //GET request /todo for a specific todo
