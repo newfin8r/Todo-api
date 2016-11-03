@@ -126,43 +126,31 @@ app.post('/todos', function(req, res) {
 app.put('/todos/:id', function(req, res) {
     var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
     var todoId = parseInt(req.params.id, 10);
-    var selectedTodo;
-    var validAttributes = {};
 
-    selectedTodo = _.findWhere(todos, {
-        id: todoId
-    });
-    if (!selectedTodo) {
-        return res.status(404).json({ // the use of return makes sure that nothign after it in the function executes
-            "error": "no todo found with that id."
-        }); //send a 404 if there is no match
-    }
+    var attributes = {};
 
     //body.hasOwnProperty('completed');//lets you know if an object has a specified property
-    if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-        validAttributes.completed = body.completed; //has the property and is a boolean
-    } else if (body.hasOwnProperty('completed')) { //has the property but is not a boolean
-        return res.status(400).json({
-            "error": "completed property must be a boolean"
-        });
-    } else {
-        //attribute not provided. request remains valid
+    //less validation required in db version due to validation on the db side
+    if (body.hasOwnProperty('completed')) {
+        attributes.completed = body.completed; //has the property and is a boolean
+    }
+    if (body.hasOwnProperty('description')) {
+        attributes.description = body.description; //has the property and is a string
     }
 
-    if (body.hasOwnProperty('description') && _.isString(body.description) &&
-        body.description.trim().length > 0) {
-        validAttributes.description = body.description; //has the property and is a string
-    } else if (body.hasOwnProperty('isString')) { //has the property but is not a string
-        return res.status(400).json({
-            "error": "description property must be a non-zero length string"
-        });
-    } else {
-        //attribute not provided. request remains valid
-    }
-    console.log('validAttributes:' + JSON.stringify(validAttributes));
-    _.extend(selectedTodo, validAttributes); //this method add any new fields in the objects and updates any existing fields with those on the array
-    //***note: you don't have to explicitly update the todos array because javascript by default passes objects by reference.
-    res.json(selectedTodo);
+    db.todo.findById(todoId).then(function(todo) {
+        if (todo) {
+            todo.update(attributes).then(function(todo) { //notice that this is an instance of todo method instead of a db.todo method
+                res.json(todo.toJSON());
+            }, function(e) { //is the failure call for the 'then' above
+                res.status(400).json(e)
+            });
+        } else {
+            res.status(404).send();
+        }
+    }, function() {
+        res.status(500).send();
+    });
 });
 
 
@@ -253,6 +241,49 @@ app.delete('/todos/:id', function(req, res) {
         }); //send a 404 if there is no match
     }
 
+});
+
+//PUT /todos/ to update a todo// requires body-parse module
+app.put('/todos/:id', function(req, res) {
+    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
+    var todoId = parseInt(req.params.id, 10);
+    var selectedTodo;
+    var validAttributes = {};
+
+    selectedTodo = _.findWhere(todos, {
+        id: todoId
+    });
+    if (!selectedTodo) {
+        return res.status(404).json({ // the use of return makes sure that nothign after it in the function executes
+            "error": "no todo found with that id."
+        }); //send a 404 if there is no match
+    }
+
+    //body.hasOwnProperty('completed');//lets you know if an object has a specified property
+    if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+        validAttributes.completed = body.completed; //has the property and is a boolean
+    } else if (body.hasOwnProperty('completed')) { //has the property but is not a boolean
+        return res.status(400).json({
+            "error": "completed property must be a boolean"
+        });
+    } else {
+        //attribute not provided. request remains valid
+    }
+
+    if (body.hasOwnProperty('description') && _.isString(body.description) &&
+        body.description.trim().length > 0) {
+        validAttributes.description = body.description; //has the property and is a string
+    } else if (body.hasOwnProperty('isString')) { //has the property but is not a string
+        return res.status(400).json({
+            "error": "description property must be a non-zero length string"
+        });
+    } else {
+        //attribute not provided. request remains valid
+    }
+    console.log('validAttributes:' + JSON.stringify(validAttributes));
+    _.extend(selectedTodo, validAttributes); //this method add any new fields in the objects and updates any existing fields with those on the array
+    //***note: you don't have to explicitly update the todos array because javascript by default passes objects by reference.
+    res.json(selectedTodo);
 });
 */
 
