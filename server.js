@@ -153,7 +153,15 @@ app.put('/todos/:id', function(req, res) {
     });
 });
 
-
+//POST /todos/ to create new todo// requires body-parse module
+app.post('/users', function(req, res) {
+    var body = _.pick(req.body, 'email', 'password'); //make sure only desired fields are added
+    db.user.create(body).then(function(user) {
+        res.json(user.toJSON());
+    }, function(e) {
+        res.status(400).json(e);
+    });
+});
 /* local in memory version before db interactivity
 //POST /todos/ to create new todo// requires body-parse module
 app.post('/todos', function(req, res) {
