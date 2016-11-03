@@ -60,20 +60,38 @@ app.get('/todos/:id', function(req, res) {
 //DELETE request /todo for a specific todo
 app.delete('/todos/:id', function(req, res) {
     var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
-    var selectedTodo;
+    db.todo.destroy({
+        where: {
+            id: todoId
+        }
+    }).then(function(rowsDeleted) {
+        if (rowsDeleted == 0) {
+            res.status(404).json({
+                error: "No todo found with id:" +
+                    todoId
+            });
+        } else {
+            res.status(204).send(); //204 = everything went find but nothing to return
+        }
+        res.status(200).send();
+    }, function() {
+        res.status(500).send();
+    });
 
-    selectedTodo = _.findWhere(todos, {
-        id: todoId
-    }); //underscorer method to locate an object in an array. notice that there are no quotes around the property name
-
-    if (selectedTodo) {
-        todos = _.without(todos, selectedTodo); //underscore method to return a copy of an array with the passed in object(s) removed
-        res.json(selectedTodo);
-    } else {
-        res.status(404).json({
-            "error": "no todo found with that id."
-        }); //send a 404 if there is no match
-    }
+    //My attempt that works:
+    // db.todo.findById(todoId).then(function(todo) {
+    //     db.todo.destroy({
+    //         where: {
+    //             id: todoId
+    //         }
+    //     }).then(function() {
+    //         res.status(200).send();
+    //     });
+    // }, function() {
+    //     res.status(404).json({
+    //         "error": "no todo found with that id."
+    //     })
+    // })
 
 });
 
@@ -214,6 +232,25 @@ app.get('/todos/:id', function(req, res) {
         res.json(selectedTodo);
     } else {
         res.status(404).send(); //send a 404 if there is no match
+    }
+
+});
+
+app.delete('/todos/:id', function(req, res) {
+    var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
+    var selectedTodo;
+
+    selectedTodo = _.findWhere(todos, {
+        id: todoId
+    }); //underscorer method to locate an object in an array. notice that there are no quotes around the property name
+
+    if (selectedTodo) {
+        todos = _.without(todos, selectedTodo); //underscore method to return a copy of an array with the passed in object(s) removed
+        res.json(selectedTodo);
+    } else {
+        res.status(404).json({
+            "error": "no todo found with that id."
+        }); //send a 404 if there is no match
     }
 
 });
