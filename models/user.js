@@ -1,3 +1,6 @@
+var bcrypt = require('bcryptjs'); //added to hash the password for encryption
+var _ = require('underscore');
+
 module.exports = function(sequelize, DataTypes) {
     return sequelize.define('user', {
         email: {
@@ -8,11 +11,27 @@ module.exports = function(sequelize, DataTypes) {
                 isEmail: true //built in funcitonality to verify format
             }
         },
+        salt: { //a random set of chartacters to pasword before it's hashed to ensure that if different users have the same password it won't come back with the same hash
+            type: DataTypes.STRING
+        },
+        password_hash: {
+            type: DataTypes.STRING
+        },
         password: {
-            type: DataTypes.STRING,
+            type: DataTypes.VIRTUAL, //VIRTUAL is a custom datatype where you can override the 'set' function which sets it's value BUT it is NOT stored in the database
             allowNull: false,
             validate: {
                 len: [7, 100] //built in funcitonality to verify length
+            },
+            set: function(value) { // value is the plain text password provided
+                var salt = bcrypt.genSaltSync(10); //this generates a random string of 10 characters
+                var hashedPassword = bcrypt.hashSync(value,
+                    salt); //takes the plain text va;ue and the salt to generate a hash value
+                //now add to the password and salt hasfields above:
+                this.setDataValue('password', value); //due to being virtual it won't be stored in the database but is derived from the databse fields being set
+                this.setDataValue('salt', salt); //is saved to database
+                this.setDataValue('password_hash',
+                    hashedPassword); //is saved to database
             }
         }
 
@@ -24,6 +43,14 @@ module.exports = function(sequelize, DataTypes) {
                     user.email = user.email.toLowerCase();
                 }
             }
+        },
+        instanceMethods: { // these are custom methods that exist at the object instance level instead of the model level. That means user. instead of db.user.
+            toPublicJSON: function() { // here we want to ensure tha that password data is not returned in the object instance
+                var json = this.toJSON();
+                return _.pick(json, 'id', 'email',
+                    'createdAt', 'updatedAt');
+            }
         }
+
     });
 };

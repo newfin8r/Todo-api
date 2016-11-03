@@ -157,7 +157,7 @@ app.put('/todos/:id', function(req, res) {
 app.post('/users', function(req, res) {
     var body = _.pick(req.body, 'email', 'password'); //make sure only desired fields are added
     db.user.create(body).then(function(user) {
-        res.json(user.toJSON());
+        res.json(user.toPublicJSON()); //toPublicJSON is a custom instance methos defined in user.js
     }, function(e) {
         res.status(400).json(e);
     });
