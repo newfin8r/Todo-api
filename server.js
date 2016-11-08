@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser'); //this is middleware for express so must be added to express like normal middleware
 var _ = require('underscore');
 var db = require('./db.js');
+var bcrypt = require('bcryptjs');
 
 var app = express();
 var PORT = process.env.PORT || 3000
@@ -162,6 +163,28 @@ app.post('/users', function(req, res) {
         res.status(400).json(e);
     });
 });
+
+//POST /users/login to login users
+app.post('/users/login', function(req, res) {
+    var body = _.pick(req.body, 'email', 'password'); //make sure only desired fields are added
+
+    db.user.authenticate(body).then(function(user) {
+        res.header('Auth', user.generateToken('authentication'))
+            .json(user.toPublicJSON()); //simply adding header(KEY,VALUE) to the resonse object creates a header
+
+    }, function() {
+        res.status(401).send();
+    });
+});
+
+db.sequelize.sync().then(function() { //same idea as was done in basic-sqlite-database.js but wih the imported db object
+    //once the database is connected start the server. Without the database it would be outside of this promise and just be in the file:
+    app.listen(PORT, function() {
+        console.log('Express listening on port:' + PORT +
+            '!');
+    });
+});
+
 /* local in memory version before db interactivity
 //POST /todos/ to create new todo// requires body-parse module
 app.post('/todos', function(req, res) {
@@ -294,10 +317,3 @@ app.put('/todos/:id', function(req, res) {
     res.json(selectedTodo);
 });
 */
-
-db.sequelize.sync().then(function() { //same idea as was done in basic-sqlite-database.js but wih the imported db object
-    //once the database is connected start the server. Without the database it would be outside of this promise and just be in the file:
-    app.listen(PORT, function() {
-        console.log('Express listening on port:' + PORT + '!');
-    });
-});

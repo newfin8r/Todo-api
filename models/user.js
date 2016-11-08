@@ -1,8 +1,10 @@
 var bcrypt = require('bcryptjs'); //added to hash the password for encryption
 var _ = require('underscore');
+var cryptojs = require('crypto-js');
+var jwt = require('jsonwebtoken');
 
 module.exports = function(sequelize, DataTypes) {
-    return sequelize.define('user', {
+    var user = sequelize.define('user', { //unstead of immediatly returning the sequelize.define we've created a variable user and retunred it at the bottom so that we can reference the user variable in the class emthods defined below
         email: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -44,13 +46,64 @@ module.exports = function(sequelize, DataTypes) {
                 }
             }
         },
-        instanceMethods: { // these are custom methods that exist at the object instance level instead of the model level. That means user. instead of db.user.
+        classMethods: { //These class methods work at the user class level(db.user) and do no require a specific instance.
+            authenticate: function(body) { //our authticate function should return a promise as we've defined it that way in server.js
+                return new Promise(function(resolve, reject) {
+                    if (typeof(body.email) !== 'string' ||
+                        typeof(body.password) !==
+                        'string') {
+                        return reject();
+                    }
+                    user.findOne({
+                        where: {
+                            email: body.email.toLowerCase()
+                        }
+                    }).then(function(user) { //just because it retured sucessfullly doesn't mean it found a macthing record
+                            if (!user || !bcrypt.compareSync(
+                                    body.password,
+                                    user.get(
+                                        'password_hash'
+                                    ))) {
+                                return reject();
+                            }
+                            resolve(user);
+                        },
+                        function(e) {
+                            reject();
+                        });
+                });
+            }
+        },
+        instanceMethods: { // these are custom methods that exist at the object instance level instead of the model level. That means user. instead of db.user. MUST have an instantiated model in order to use these
             toPublicJSON: function() { // here we want to ensure tha that password data is not returned in the object instance
                 var json = this.toJSON();
                 return _.pick(json, 'id', 'email',
                     'createdAt', 'updatedAt');
+            },
+            generateToken: function(type) { //this creates a toekn containing user information
+                if (!_.isString(type)) {
+                    return undefined;
+                }
+
+                try {
+                    var stringData = JSON.stringify({ //takes the user id and type to create a string
+                        id: this.get('id'),
+                        type: type
+                    });
+                    var encryptedData = cryptojs.AES.encrypt(
+                        stringData, 'abc123!@#').toString(); //takes user data and password to created an encrypted string
+                    var token = jwt.sign({
+                        token: encryptedData
+                    }, 'qwerty'); //first argument is the data to tokenize and the second is the password
+                    return token;
+                } catch (e) {
+                    console.error(e);
+                    return undefined;
+                }
             }
         }
 
     });
+
+    return user;
 };
