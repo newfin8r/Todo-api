@@ -169,8 +169,14 @@ app.post('/users/login', function(req, res) {
     var body = _.pick(req.body, 'email', 'password'); //make sure only desired fields are added
 
     db.user.authenticate(body).then(function(user) {
-        res.header('Auth', user.generateToken('authentication'))
-            .json(user.toPublicJSON()); //simply adding header(KEY,VALUE) to the resonse object creates a header
+        var token = user.generateToken('authentication');
+        if (token) {
+            res.header('Auth', token)
+                .json(user.toPublicJSON()); //simply adding header(KEY,VALUE) to the resonse object creates a header
+
+        } else {
+            res.status(401).send();
+        }
 
     }, function() {
         res.status(401).send();
