@@ -3,6 +3,7 @@ var bodyParser = require('body-parser'); //this is middleware for express so mus
 var _ = require('underscore');
 var db = require('./db.js');
 var bcrypt = require('bcryptjs');
+var middleware = require('./middleware.js')(db); //notice that because we defined this middleware as a function we can pass db into it
 
 var app = express();
 var PORT = process.env.PORT || 3000
@@ -16,7 +17,7 @@ app.get('/', function(req, res) {
 });
 
 //GET request /todos FOR ALL TODOS
-app.get('/todos', function(req, res) {
+app.get('/todos', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var queryParams = req.query //gets the query string params. All values come in as strings
     var where = {};
 
@@ -44,7 +45,7 @@ app.get('/todos', function(req, res) {
 });
 
 //GET request /todo for a specific todo
-app.get('/todos/:id', function(req, res) {
+app.get('/todos/:id', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
     db.todo.findById(todoId).then(function(todo) {
         if (!!todo) { //using !! turns 'truthy' objects into the boolean true representation while ! put it to false
@@ -59,7 +60,7 @@ app.get('/todos/:id', function(req, res) {
 
 
 //DELETE request /todo for a specific todo
-app.delete('/todos/:id', function(req, res) {
+app.delete('/todos/:id', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
     db.todo.destroy({
         where: {
@@ -97,7 +98,7 @@ app.delete('/todos/:id', function(req, res) {
 });
 
 //POST /todos/ to create new todo// requires body-parse module
-app.post('/todos', function(req, res) {
+app.post('/todos', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
     if ((!_.isBoolean(body.completed)) || (!_.isString(body.description)) ||
         (body.description.trim().length === 0)) {
@@ -124,7 +125,7 @@ app.post('/todos', function(req, res) {
 
 
 //PUT /todos/ to update a todo// requires body-parse module
-app.put('/todos/:id', function(req, res) {
+app.put('/todos/:id', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
     var todoId = parseInt(req.params.id, 10);
 

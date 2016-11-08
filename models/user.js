@@ -72,6 +72,33 @@ module.exports = function(sequelize, DataTypes) {
                             reject();
                         });
                 });
+            },
+            findByToken: function(token) {
+                return new Promise(function(resolve, reject) {
+                    try {
+                        var decodedJWT = jwt.verify(
+                            token, 'qwerty');
+                        var bytes = cryptojs.AES.decrypt(
+                            decodedJWT.token,
+                            'abc123!@#'); //looking at generateToken below you can see how the token property was added to the token and that's why you retrieve it this way
+                        var tokenData = JSON.parse(
+                            bytes.toString(cryptojs
+                                .enc.Utf8)); //this will get two pieces: id and type
+                        user.findById(tokenData.id).then(
+                            function(user) { //we have access to the user variable because we defined it near the top at line 7
+                                if (user) {
+                                    resolve(user);
+                                } else {
+                                    reject();
+                                }
+                            },
+                            function(e) {
+                                reject();
+                            });
+                    } catch (e) {
+                        reject();
+                    }
+                });
             }
         },
         instanceMethods: { // these are custom methods that exist at the object instance level instead of the model level. That means user. instead of db.user. MUST have an instantiated model in order to use these
