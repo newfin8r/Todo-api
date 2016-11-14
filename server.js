@@ -19,7 +19,9 @@ app.get('/', function(req, res) {
 //GET request /todos FOR ALL TODOS
 app.get('/todos', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var queryParams = req.query //gets the query string params. All values come in as strings
-    var where = {};
+    var where = {
+        userId: req.user.get('id')
+    };
 
     if (queryParams.hasOwnProperty('completed')) {
         if (queryParams.completed === 'true') {
@@ -47,7 +49,13 @@ app.get('/todos', middleware.requireAuhentication, function(req, res) { //notice
 //GET request /todo for a specific todo
 app.get('/todos/:id', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
-    db.todo.findById(todoId).then(function(todo) {
+    //db.todo.findById(todoId).then(function(todo) {
+    db.todo.findOne({
+        where: {
+            id: todoId,
+            userId: req.user.get('id')
+        }
+    }).then(function(todo) {
         if (!!todo) { //using !! turns 'truthy' objects into the boolean true representation while ! put it to false
             res.json(todo.toJSON());
         } else {
@@ -64,7 +72,8 @@ app.delete('/todos/:id', middleware.requireAuhentication, function(req, res) { /
     var todoId = parseInt(req.params.id, 10); //params are allstring so, in this case, needs to be converted
     db.todo.destroy({
         where: {
-            id: todoId
+            id: todoId,
+            userId: req.user.get('id')
         }
     }).then(function(rowsDeleted) {
         if (rowsDeleted == 0) {
@@ -100,6 +109,19 @@ app.delete('/todos/:id', middleware.requireAuhentication, function(req, res) { /
 //POST /todos/ to create new todo// requires body-parse module
 app.post('/todos', middleware.requireAuhentication, function(req, res) { //notice that we've injected the middleware into this function by adding it as the second paramater which, in this case, requires that the user be authenticated in order to perform this function
     var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
+    db.todo.create(body).then(function(todo) {
+        req.user.addTodo(todo).then(function(todo) { // the user object was added to the req by the middleware. This process creates te associateion between the todo and user
+            // now that you've added a usr assocatin with the todo it must be reloaded from the db as they todo in memory doesn't have the user data
+            return todo.reload();
+        }).then(function(todo) { //this todo is new reloaded one from the db
+            res.json(todo.toJSON());
+        });
+    }, function(e) {
+        res.status(400).json(e);
+    });
+
+    /*Long method
+    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
     if ((!_.isBoolean(body.completed)) || (!_.isString(body.description)) ||
         (body.description.trim().length === 0)) {
         return res.status(400).send(); //return error
@@ -111,13 +133,6 @@ app.post('/todos', middleware.requireAuhentication, function(req, res) { //notic
     }).then(function(todo) {
         res.status(200).json(todo);
     }).catch(function(e) {
-        res.status(400).json(e);
-    });
-    /*OR the body of this method could more simply be:
-    var body = _.pick(req.body, 'description', 'completed'); //make sure only desired fields are added
-    db.todo.create(body).then(function(todo) {
-        res.json(todo.toJSON());
-    }, function(e) {
         res.status(400).json(e);
     });
     */
@@ -140,7 +155,13 @@ app.put('/todos/:id', middleware.requireAuhentication, function(req, res) { //no
         attributes.description = body.description; //has the property and is a string
     }
 
-    db.todo.findById(todoId).then(function(todo) {
+    //db.todo.findById(todoId).then(function(todo) {
+    db.todo.findOne({
+        where: {
+            id: todoId,
+            userId: req.user.get('id')
+        }
+    }).then(function(todo) {
         if (todo) {
             todo.update(attributes).then(function(todo) { //notice that this is an instance of todo method instead of a db.todo method
                 res.json(todo.toJSON());
@@ -184,8 +205,11 @@ app.post('/users/login', function(req, res) {
     });
 });
 
-db.sequelize.sync().then(function() { //same idea as was done in basic-sqlite-database.js but wih the imported db object
+db.sequelize.sync({
+    force: true
+}).then(function() { //same idea as was done in basic-sqlite-database.js but wih the imported db object
     //once the database is connected start the server. Without the database it would be outside of this promise and just be in the file:
+    //using db.sequelize.sync({force: true}).then... recreates the database
     app.listen(PORT, function() {
         console.log('Express listening on port:' + PORT +
             '!');

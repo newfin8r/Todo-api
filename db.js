@@ -21,4 +21,8 @@ db.user = sequelize.import(__dirname + '/models/user.js') //lets you load in use
 db.sequelize = sequelize; //add references to object created above
 db.Sequelize = Sequelize; //add references to object created above
 
+db.todo.belongsTo(db.user); //sets the associateion between the two. You pass in the model to the belongsTo function
+db.user.hasMany(db.todo); //with the line above this will crrate th foreign keys needed for the relationship
+
+
 module.exports = db; //you can on;y export one thing so by exporting an object you can embed mulitple things within it.
