@@ -189,19 +189,28 @@ app.post('/users', function(req, res) {
 //POST /users/login to login users
 app.post('/users/login', function(req, res) {
     var body = _.pick(req.body, 'email', 'password'); //make sure only desired fields are added
+    var userInstance;
 
     db.user.authenticate(body).then(function(user) {
         var token = user.generateToken('authentication');
-        if (token) {
-            res.header('Auth', token)
-                .json(user.toPublicJSON()); //simply adding header(KEY,VALUE) to the resonse object creates a header
-
-        } else {
-            res.status(401).send();
-        }
-
-    }, function() {
+        userInstance = user;
+        return db.token.create({
+            token: token
+        });
+    }).then(function(tokenInstance) {
+        res.header('Auth', tokenInstance.get('token')).json(
+            userInstance.toPublicJSON());
+    }).catch(function() {
         res.status(401).send();
+    });
+});
+
+//Delete /users/login - to delete a login instance resulting in a logout. Obviously this will aldo require athentication
+app.delete('/users/login', middleware.requireAuhentication, function(req, res) {
+    req.token.destroy(function() {
+        res.status(204).send();
+    }).catch(function() {
+        res.status(500).send();
     });
 });
 

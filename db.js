@@ -18,6 +18,7 @@ var db = {};
 //now load sequlize models:
 db.todo = sequelize.import(__dirname + '/models/todo.js') //lets you load in models from separate files. The file format is very specifc as you can see in the sample todo.js
 db.user = sequelize.import(__dirname + '/models/user.js') //lets you load in user.js model.
+db.token = sequelize.import(__dirname + '/models/token.js') //lets you load in token.js model.
 db.sequelize = sequelize; //add references to object created above
 db.Sequelize = Sequelize; //add references to object created above
 
